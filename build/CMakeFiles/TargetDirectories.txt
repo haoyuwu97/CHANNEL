@@ -1,0 +1,8 @@
+/mnt/data/CHANNEL_vNext/build/CMakeFiles/channel_core.dir
+/mnt/data/CHANNEL_vNext/build/CMakeFiles/channel.dir
+/mnt/data/CHANNEL_vNext/build/CMakeFiles/edit_cache.dir
+/mnt/data/CHANNEL_vNext/build/CMakeFiles/rebuild_cache.dir
+/mnt/data/CHANNEL_vNext/build/CMakeFiles/list_install_components.dir
+/mnt/data/CHANNEL_vNext/build/CMakeFiles/install.dir
+/mnt/data/CHANNEL_vNext/build/CMakeFiles/install/local.dir
+/mnt/data/CHANNEL_vNext/build/CMakeFiles/install/strip.dir
