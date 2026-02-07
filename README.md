@@ -147,9 +147,3 @@ CHANNEL enforces this protocol by construction:
 1e-9  78.0  60.0  40.0
 ...
 ```
-
----
-
-## License
-
-Internal/research use. Add your preferred license here.
