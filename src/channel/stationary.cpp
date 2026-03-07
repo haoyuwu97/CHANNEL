@@ -383,9 +383,14 @@ void write_stationary_outputs(const ChannelConfig& cfg,
   idx.summary["iterations"] = std::to_string(sol.iterations);
   idx.summary["Q_gate_C_per_m2"] = std::to_string(sol.charge.Q_gate);
   idx.summary["Q_vol_C_per_m2"] = std::to_string(sol.charge.Q_vol);
-  idx.summary["maxwell_mismatch_C_per_m2"] = std::to_string(sol.charge.maxwell_mismatch);
+  idx.summary["Q_excess_vol_C_per_m2"] = std::to_string(sol.charge.Q_excess_vol);
+  idx.summary["charge_mismatch_C_per_m2"] = std::to_string(sol.charge.maxwell_mismatch);
+  idx.summary["maxwell_mismatch_C_per_m2"] = std::to_string(sol.charge.maxwell_mismatch); // legacy alias
   idx.summary["Omega_J_per_m2"] = std::to_string(sol.Omega);
-  if (sol.has_capacitance) idx.summary["C_eq_F_per_m2"] = std::to_string(sol.C_eq);
+  if (sol.has_capacitance) {
+    idx.summary["C_eq_F_per_m2"] = std::to_string(sol.C_eq);
+    idx.summary["C_star_eq_F_per_m3"] = std::to_string(sol.C_eq / grid.length());
+  }
 
   idx.datasets["psi"] = DatasetMeta{"psi.dat", {"z", "psi"}, "Electrostatic potential"};
   if (cfg.redox) idx.datasets["alpha"] = DatasetMeta{"alpha.dat", {"z", "alpha"}, "Oxidation fraction"};

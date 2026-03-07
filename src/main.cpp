@@ -75,10 +75,10 @@ int main(int argc, char** argv) {
 
       if (cfg.verify) {
         auto rep = channel::verify_stationary(cfg, grid, kernels, sol);
-        std::cout << "[verify] Maxwell mismatch: " << rep.maxwell_mismatch
+        std::cout << "[verify] Gauss-law charge mismatch: " << rep.maxwell_mismatch
                   << " (ok=" << (rep.maxwell_ok ? "true" : "false") << ")\n";
-        std::cout << "[verify] dOmega/dVG: " << rep.dOmega_dVG
-                  << " vs Q_gate: " << rep.Q_gate
+        std::cout << "[verify] Dirichlet Maxwell check (system-side): dOmega/dVG=" << rep.dOmega_dVG
+                  << " vs Q_gate(system)=" << rep.Q_gate
                   << " rel_err=" << rep.energy_rel_error
                   << " (ok=" << (rep.energy_ok ? "true" : "false") << ")\n";
       }

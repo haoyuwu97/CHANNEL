@@ -49,7 +49,18 @@ ChargeSummary compute_charge(const Grid1D& grid,
 
   auto rho = compute_rho_free(grid, species, K, c, alpha, redox);
 
-  for (std::size_t k = 0; k < nz; ++k) out.Q_vol += rho[k] * dz;
+  for (std::size_t k = 0; k < nz; ++k) {
+    out.Q_vol += rho[k] * dz;
+
+    double rho_excess = K.rho_base[k];
+    for (std::size_t i = 0; i < species.size(); ++i) {
+      rho_excess += species[i].q * (c[i][k] - species[i].c_res);
+    }
+    if (redox) {
+      rho_excess += static_cast<double>(redox->sigmaP) * eCharge * K.ns[k] * alpha[k];
+    }
+    out.Q_excess_vol += rho_excess * dz;
+  }
 
   // Boundary derivatives at faces
   double dpsi0 = (psi[0] - psi0) / dz;
