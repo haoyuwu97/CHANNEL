@@ -10,10 +10,11 @@
 namespace channel {
 
 struct ChargeSummary {
-  double Q_vol = 0.0;      // ∫ ρ_free dz [C/m^2] in 1D per-area convention
+  double Q_vol = 0.0;      // ∫ ρ_free dz [C/m^2] in 1D per-area convention (raw total free charge)
+  double Q_excess_vol = 0.0; // ∫[Σ_i q_i(c_i-c_i^res) + σ_P e n_s α + ρ_base] dz [C/m^2]
   double Q_gate = 0.0;     // -ε0 ε(d) ψ'(d) [C/m^2]
   double Q_left = 0.0;     // +ε0 ε(0) ψ'(0) [C/m^2] (sign so Q_vol = Q_left + Q_gate)
-  double maxwell_mismatch = 0.0; // |Q_vol - (Q_left + Q_gate)|
+  double maxwell_mismatch = 0.0; // legacy name: Gauss-law charge-closure residual |Q_vol - (Q_left + Q_gate)|
 };
 
 std::vector<double> compute_rho_free(const Grid1D& grid,
