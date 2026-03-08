@@ -11,6 +11,13 @@ from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 
+def _new_config_parser() -> configparser.ConfigParser:
+    """Create a ConfigParser that preserves option case and disables interpolation."""
+    cp = configparser.ConfigParser(interpolation=None)
+    cp.optionxform = str
+    return cp
+
+
 @dataclass(frozen=True)
 class RunOutput:
     """Convenient handle returned by channelio.run()."""
@@ -63,7 +70,7 @@ def _patch_output_dir(config_path: str, output_dir: str) -> str:
     Create a temporary INI that is identical to config_path but with [general] output_dir overridden.
     Returns the temporary path.
     """
-    cp = configparser.ConfigParser()
+    cp = _new_config_parser()
     cp.read(config_path)
     if "general" not in cp:
         cp["general"] = {}
@@ -141,7 +148,7 @@ def run(
     out_dir = output_dir
     if out_dir is None:
         # best-effort parse
-        cp = configparser.ConfigParser()
+        cp = _new_config_parser()
         cp.read(config_path)
         out_dir = cp.get("general", "output_dir", fallback="out")
 
@@ -304,7 +311,7 @@ def run_from_pilots(
 
     # Write INI
     ini_path = out / "config.ini"
-    cp = configparser.ConfigParser()
+    cp = _new_config_parser()
 
     cp["general"] = {
         "T": str(T),
@@ -390,4 +397,5 @@ def run_from_pilots(
     with open(ini_path, "w") as f:
         cp.write(f)
 
-    return run(str(ini_path), exe=exe, output_dir=str(out))
+    # output_dir is already written into config.ini; avoid rewriting the file again.
+    return run(str(ini_path), exe=exe)
