@@ -27,52 +27,6 @@ CHANNEL supports three closure modes:
 
 ---
 
-## Repository layout
-
-```text
-CHANNEL/
-├── CMakeLists.txt
-├── README.md
-├── examples/
-│   └── constant_simple.ini
-├── include/channel/
-│   ├── config.hpp
-│   ├── device.hpp
-│   ├── dynamic.hpp
-│   ├── functional.hpp
-│   ├── grid.hpp
-│   ├── io.hpp
-│   ├── kernels.hpp
-│   ├── observables.hpp
-│   ├── poisson.hpp
-│   ├── profile.hpp
-│   ├── stationary.hpp
-│   ├── types.hpp
-│   └── verify.hpp
-├── python/
-│   ├── pyproject.toml
-│   └── channelio/
-│       ├── __init__.py
-│       └── api.py
-└── src/
-    ├── main.cpp
-    └── channel/
-        ├── config.cpp
-        ├── device.cpp
-        ├── dynamic.cpp
-        ├── functional.cpp
-        ├── grid.cpp
-        ├── io.cpp
-        ├── kernels.cpp
-        ├── observables.cpp
-        ├── poisson.cpp
-        ├── profile.cpp
-        ├── stationary.cpp
-        └── verify.cpp
-```
-
----
-
 ## Build requirements
 
 You need:
@@ -129,19 +83,6 @@ Run the bundled example:
 
 ```bash
 ./build/channel --config examples/constant_simple.ini
-```
-
-Example output:
-
-```text
-out_example/
-├── config_used.ini
-└── stationary/
-    ├── c_Cl.dat
-    ├── c_Na.dat
-    ├── kernels_core.dat
-    ├── psi.dat
-    └── results.json
 ```
 
 Each run writes:
