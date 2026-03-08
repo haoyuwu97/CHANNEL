@@ -1,79 +1,189 @@
-# CHANNEL — CHArge aNd ioN NanoscaLe-to-device Link
+# CHANNEL
 
-A continuum **charge + ion** simulator designed to take **PILOTS**-processed nanoscale kernel outputs
-and solve the 1D continuum theory described in the CHANNEL framework:
+**CHArge aNd ioN NanoscaLe-to-device Link**
 
-- electrostatics (Poisson) with spatially varying dielectric
-- multi-species ion thermodynamics and transport (Poisson–Nernst–Planck with Scharfetter–Gummel)
-- optional redox (Langmuir / kinetics) + electrostatic feedback on redox energetics
-- optional mapping to a simple OECT drain current observable
+CHANNEL is a 1D continuum simulator for charge, ion, and redox physics in nanoscale-to-device workflows. It is designed to consume **PILOTS-generated kernels** and solve the continuum model behind the CHANNEL framework, including electrostatics, ion thermodynamics/transport, optional redox coupling, and an optional OECT-style observable.
 
-CHANNEL supports three **closure modes** (vNext):
+## What CHANNEL solves
 
-* **Mode A (Ω-based, analytic)**: the default OMIEC grand-potential closure using
-  `ε_r(z;α)`, `h_i(z;α)`, `Δμ_i^0(z;α)`, ...
-* **Mode B (Ω-based + ω_extra)**: identical to Mode A but with an additional, optional
-  energy density kernel `ω_extra(z;α)` for unknown/excess physics (still auditable).
-* **Mode C (μ-closure via ϕ_ex)**: skip explicit Ω; provide per-species
-  `ϕ_ex,i(z;α)` so that `μ_i/(kBT)=ln(c_i/c_i^{res})+ϕ_ex,i+βq_iψ`.
+CHANNEL combines several pieces of physics in one workflow:
 
-This repository provides:
+- **Poisson electrostatics** with spatially varying dielectric response
+- **Multi-species ion equilibrium / transport** in a Poisson–Nernst–Planck-style formulation
+- **Scharfetter–Gummel discretization** for drift–diffusion fluxes
+- **Optional redox occupancy** with Langmuir / kinetic terms and electrostatic feedback
+- **Optional device mapping** to a simple drain-current observable for OECT-style analysis
 
-- `libchannel` (C++ library)
-- `channel` (CLI executable)
-- `python/channelio` (Python wrapper with PILOTS-style ergonomics)
+CHANNEL supports three closure modes:
 
-> Note: Kernel generation (ε_r(z,α), h_i(z,α), Δμ_i^0(z,α), n_s(z), ρ_base(z), …) is expected from PILOTS.
+- **Mode A — Ω-based analytic closure**  
+  Uses the standard OMIEC grand-potential closure with kernels such as `ε_r(z;α)`, `h_i(z;α)`, and `Δμ_i^0(z;α)`.
+- **Mode B — Ω-based closure with `ω_extra`**  
+  Same as Mode A, but adds an optional excess / surrogate energy density `ω_extra(z;α)`.
+- **Mode C — μ-closure via `ϕ_ex`**  
+  Skips explicit `Ω` and closes the species chemical potentials with per-species excess potentials `ϕ_ex,i(z;α)`.
+
+> CHANNEL does **not** generate nanoscale kernels by itself. Kernel generation is expected to come from **PILOTS** or another upstream workflow.
 
 ---
 
-## Build (C++)
+## Repository layout
+
+```text
+CHANNEL/
+├── CMakeLists.txt
+├── README.md
+├── examples/
+│   └── constant_simple.ini
+├── include/channel/
+│   ├── config.hpp
+│   ├── device.hpp
+│   ├── dynamic.hpp
+│   ├── functional.hpp
+│   ├── grid.hpp
+│   ├── io.hpp
+│   ├── kernels.hpp
+│   ├── observables.hpp
+│   ├── poisson.hpp
+│   ├── profile.hpp
+│   ├── stationary.hpp
+│   ├── types.hpp
+│   └── verify.hpp
+├── python/
+│   ├── pyproject.toml
+│   └── channelio/
+│       ├── __init__.py
+│       └── api.py
+└── src/
+    ├── main.cpp
+    └── channel/
+        ├── config.cpp
+        ├── device.cpp
+        ├── dynamic.cpp
+        ├── functional.cpp
+        ├── grid.cpp
+        ├── io.cpp
+        ├── kernels.cpp
+        ├── observables.cpp
+        ├── poisson.cpp
+        ├── profile.cpp
+        ├── stationary.cpp
+        └── verify.cpp
+```
+
+---
+
+## Build requirements
+
+You need:
+
+- **CMake >= 3.16**
+- A **C++17** compiler
+- **pkg-config**
+- **json-c** development files
+- Optional: **OpenMP** for parallel execution
+
+On Linux, install the system dependencies first. Typical package names are similar to:
 
 ```bash
+# Debian / Ubuntu style example
+sudo apt-get install cmake g++ pkg-config libjson-c-dev
+```
+
+---
+
+## Build
+
+```bash
+git clone <your-fork-or-repo-url>
 cd CHANNEL
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
 ```
 
-The executable will be `build/channel`.
+This produces:
+
+- `build/channel` — the CLI executable
+- `build/libchannel_core.a` (or platform equivalent) — the internal C++ library target
+
+### Current packaging status
+
+At the moment, the CMake install rule installs the **CLI executable**:
+
+```bash
+cmake --install build --prefix ./install
+```
+
+If you want CHANNEL to behave like a reusable C++ package, you will likely want to add:
+
+- header installation
+- library installation
+- exported CMake targets
+- package config files
 
 ---
 
-## Run (CLI)
+## Quick start (CLI)
+
+Run the bundled example:
 
 ```bash
 ./build/channel --config examples/constant_simple.ini
 ```
 
-Outputs are written under `[general] output_dir`, into subfolders:
+Example output:
 
-- `output_dir/stationary/*`
-- `output_dir/dynamic/*` (if enabled)
+```text
+out_example/
+├── config_used.ini
+└── stationary/
+    ├── c_Cl.dat
+    ├── c_Na.dat
+    ├── kernels_core.dat
+    ├── psi.dat
+    └── results.json
+```
 
-Each run writes `results.json` plus plain text `.dat` tables.
+Each run writes:
+
+- `results.json` — machine-readable run summary and dataset index
+- `*.dat` — plain text columnar outputs
+
+If dynamic mode is enabled, a `dynamic/` directory is also written.
 
 ---
 
-## Python interface
+## Quick start (Python)
 
-Install the python wrapper in editable mode:
+The Python wrapper is intentionally lightweight: it does **not** reimplement the solver. It discovers and launches the compiled `channel` executable, then parses the generated output files.
+
+Install it in editable mode:
 
 ```bash
 pip install -e python
 ```
 
-Then:
+Then use it like this:
 
 ```python
 import channelio as ch
 
-out = ch.run("config.ini")
-print(out.stationary)  # parsed results.json from output_dir/stationary
+out = ch.run("examples/constant_simple.ini")
+print(out.output_dir)
+print(out.stationary)
 ```
 
-PILOTS interop helper:
+If the executable is not on `PATH`, either:
+
+- build the repo so that `build/channel` exists, or
+- set `CHANNEL_EXE=/path/to/channel`, or
+- pass `exe="/path/to/channel"` explicitly
+
+### PILOTS-style convenience wrapper
 
 ```python
+import channelio as ch
+
 out = ch.run_from_pilots(
     pilots_dir="PILOTS_OUT",
     output_dir="CHANNEL_OUT",
@@ -90,60 +200,191 @@ out = ch.run_from_pilots(
 )
 ```
 
-If you have a custom PILOTS file schema, use `channelio.discover_pilots_kernels()` and write your own config.
+Useful helper:
+
+```python
+kernels = ch.discover_pilots_kernels("PILOTS_OUT", ["Na", "Cl"])
+print(kernels)
+```
 
 ---
 
-## Configuration overview
+## Configuration model
 
-CHANNEL uses an INI config file. Key sections:
+CHANNEL uses an INI configuration file.
 
-- `[general]`: geometry, temperature, output dir, mode
-- `[kernel]`: constant or file-based kernels
-- `[closure]`: closure mode (A/B/C)
-- `[species.<name>]`: ion properties
-- `[redox]`: optional redox + counterion coupling
-- `[stationary]`: steady-state solver parameters
-- `[dynamic]`: transient solver parameters
-- `[device]`: optional OECT mapping parameters
-- `[verify]`: enable thermodynamic consistency checks
+### Core sections
 
-See `examples/constant_simple.ini` for a minimal config.
+- `[general]` — geometry, temperature, run mode, output directory, OpenMP threads
+- `[kernel]` — constant kernels or file-based kernel paths
+- `[closure]` — closure mode `A`, `B`, or `C`
+- `[species.<name>]` — species properties such as valence, diffusion, and reservoir concentration
+- `[redox]` — optional redox / counterion coupling
+- `[stationary]` — steady-state solve controls
+- `[dynamic]` — transient controls and waveform definition
+- `[device]` — optional device-level observable mapping
+- `[verify]` — thermodynamic / electrostatic consistency checks
 
-### q0_strategy / double-counting protocol
+### Minimal example
 
-`[kernel] parameterization` is the **q0_strategy** from the theory document:
+```ini
+[general]
+T = 298.15
+d = 1e-7
+n_cells = 200
+output_dir = out_example
+mode = stationary
 
-* `A`: explicit `h_i` (accessible volume) and **conditional** `Δμ_i^0` (beyond sieving)
-* `B`: lump `h_i` into `Δμ_i^0` and force `h_i ≡ 1`
+[kernel]
+source = constant
+parameterization = A
+epsr_res = 78.0
+epsr_const = 78.0
+ns_const = 0.0
+rho_base_const = 0.0
 
-CHANNEL enforces this protocol by construction:
-`U_i^{ex} = U_i^{Born} + Δμ_i^0` and `h_i` enters only through `ln(c/(h c_res))` and `-ln h`.
+[species.Na]
+kappa = 1
+r_born = 1.8e-10
+D = 1.33e-9
+c_res = 1e23
+mobile = true
 
-### Mode B / Mode C extra kernel files
+[species.Cl]
+kappa = -1
+r_born = 1.8e-10
+D = 2.03e-9
+c_res = 1e23
+mobile = true
 
-* `[kernel] omega_extra_file`: optional `Profile1D` or `FieldZAlpha` for `ω_extra(z;α)` [J/m^3]
-* `[kernel] phi_ex_file.<name>` or `[kernel.species.<name>] phi_ex_file`: optional `Profile1D` or
-  `FieldZAlpha` for `ϕ_ex,i(z;α)` [dimensionless] (required for Mode C)
+[stationary]
+enabled = true
+VG = 0.01
+max_iter = 500
+tol = 1e-8
+damping = 0.5
+enable_feedback = false
+
+[dynamic]
+enabled = false
+
+[verify]
+enabled = true
+```
+
+See `examples/constant_simple.ini` for the bundled version.
 
 ---
 
-## Kernel file formats
+## Kernel inputs
 
-**Profile1D** (`z value` per line, comment lines start with `#` or `;`):
+CHANNEL supports two kernel file formats.
 
+### 1. `Profile1D`
+
+A simple two-column profile on `z`:
+
+```text
+# z [m]    value
+0.0        78.0
+1e-9       78.0
+2e-9       77.5
 ```
-# z [m]   epsr [-]
-0.0      78.0
-1e-9     78.0
-...
-```
 
-**FieldZAlpha** (α header + data rows; each row is `z f(α0) f(α1) ...`):
+### 2. `FieldZAlpha`
 
-```
+A field tabulated on `(z, α)` with an alpha header:
+
+```text
 # alpha: 0.0 0.5 1.0
 0.0   78.0  60.0  40.0
 1e-9  78.0  60.0  40.0
-...
+2e-9  77.5  59.0  39.0
 ```
+
+The solver interpolates these kernels onto the working grid as needed.
+
+### Kernel keys used by CHANNEL
+
+Common kernel inputs include:
+
+- `epsr_file`
+- `ns_file`
+- `rho_base_file`
+- `omega_extra_file` (Mode B)
+- `hi_file.<species>`
+- `delta_mu0_file.<species>`
+- `phi_ex_file.<species>` (Mode C)
+
+---
+
+## Parameterization / double-counting protocol
+
+`[kernel] parameterization` implements the `q0_strategy` convention from the theory notes:
+
+- **A** — explicit `h_i` plus conditional `Δμ_i^0`
+- **B** — absorb `h_i` into `Δμ_i^0` and force `h_i ≡ 1`
+
+In the Ω-based formulation, CHANNEL enforces the protocol as:
+
+```text
+U_i^ex = U_i^Born + Δμ_i^0
+```
+
+with `h_i` appearing only through the ideal / entropic terms.
+
+---
+
+## Outputs
+
+### Stationary outputs
+
+Typical stationary datasets include:
+
+- `psi.dat` — electrostatic potential
+- `c_<species>.dat` — concentration profile per species
+- `kernels_core.dat` — evaluated core kernels such as `epsr`, `ns`, and `rho_base`
+- `results.json` — summary, dataset manifest, and metadata
+
+### Dynamic outputs
+
+When dynamic mode is enabled, CHANNEL additionally writes time-series outputs such as:
+
+- `t`
+- `VG`
+- `Q_gate`
+- `Q_vol`
+- `alpha_bar`
+- `Omega`
+- optional `ID`
+
+---
+
+## Verification and diagnostics
+
+CHANNEL can report internal consistency checks, including:
+
+- Gauss-law / Maxwell charge-closure mismatch
+- a Dirichlet-side Maxwell relation check comparing `dΩ/dVG` and `Q_gate`
+
+Enable this through:
+
+```ini
+[verify]
+enabled = true
+```
+
+---
+
+## Notes and limitations
+
+- CHANNEL is currently oriented around **1D continuum problems**.
+- Kernel generation is external to this repository.
+- The Python wrapper depends on a working `channel` executable.
+- The internal C++ library target is built, but the current install step is CLI-first rather than a full exported C++ SDK.
+
+---
+
+## License
+
+This repository is licensed under **GPL-3.0**. See `LICENSE` for details.
