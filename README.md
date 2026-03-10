@@ -1,4 +1,4 @@
-# CHANNEL: CHArge aNd ioN NanoscaLe-to-device Link
+# CHANNEL: Charge and Ion NanoscaLe-to-device Link
 
 ## Overview
 CHANNEL is a 1D continuum simulator for charge, ion, and redox physics in nanoscale-to-device workflows. It is designed to consume molecular kernels and solve the continuum model behind the CHANNEL framework, including electrostatics, ion thermodynamics/transport, optional redox coupling, and an optional OECT-style observable.
